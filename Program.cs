@@ -1,89 +1,112 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
-using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace DiningPhilosophers
 {
     class Program
     {
-        private const int PHILOSOPHER_NUM = 5;
-        private const int THINKING_TIME = 5000; //max
-        private const int EATING_TIME = 10000; //max
-        static readonly object locker = new object();
+        private const int PHILOSOPHER_COUNT = 5;
 
         static void Main(string[] args)
         {
-            // init philosophers and chopsticks
-            var philosophers = new List<Philosopher>(PHILOSOPHER_NUM);
-            var chopsticks = new List<Chopstick>(PHILOSOPHER_NUM);
+            // init Forks
+            var Forks = new List<Fork>(PHILOSOPHER_COUNT);
 
-            Console.WriteLine("Dinner starts");
-
-            for (int i = 0; i < PHILOSOPHER_NUM; i++)
+            for (int i = 0; i < PHILOSOPHER_COUNT; ++i)
             {
-                philosophers.Add(new Philosopher(philosophers, i));
-                startDinner(i);
+                Forks.Add(new Fork(i));
             }
 
-            // dinner done
-            Console.WriteLine("Dinner is over!");
+            // init philosophers
+            // first philosopher
+            Task[] tasks = new Task[PHILOSOPHER_COUNT];
+            tasks[0] = new Task(() => Philoshoper.Eat(Forks[0], Forks[PHILOSOPHER_COUNT - 1], 1, 1, PHILOSOPHER_COUNT));
+
+            // other philosophers
+            for (int i = 1; i < PHILOSOPHER_COUNT; ++i)
+            {
+                int ix = i;
+                tasks[ix] = new Task(() => Philoshoper.Eat(Forks[ix - 1], Forks[ix], ix + 1, ix, ix + 1));
+            }
+
+            // dinner starts
+            Console.WriteLine("Dinner starts!");
+
+            Parallel.ForEach(tasks, t =>
+            {
+                t.Start();
+            });
+
+            // Wait until all philosophers finished
+            Task.WaitAll(tasks);
+
+            Console.WriteLine("Dinner done!");
             Console.ReadLine();
         }
+    }
 
-        public static void startDinner(int index)
+    public class Philoshoper
+    {
+        static public void Eat(Fork leftFork, Fork rightFork, int philosopherNumber, int leftForkNumber, int rightForkNumber)
         {
-            Thread phil = new Thread(() => Console.WriteLine("phil" + index + "starts"));
-            phil.Start();
-            Random t = new Random();
-            int think = t.Next(0, THINKING_TIME);
-            Thread.Sleep(think);
-            Console.WriteLine("phil" + index + "finished thinking");
-
-            lock (locker)
+            while (true)
             {
-                Console.WriteLine("locked");
-                //take fork[index]
-                //printf('phil' + index + 'took first fork: index)
-                //take fork[(index + 1) mod n]
-                //printf('phil' + index + 'took second fork: index)
-                //int t2 = random between 0 and eatingTime
-                //sleep(t)
-                //printf('phil' + index + ' is done eating')
-                //putBackForks(index, (index + 1) mod n)
+                // philosopher thinks
+                Random r = new Random();
+                int thinking_time = r.Next(0, 5000);
+                Console.WriteLine("Philosopher {0} thinks.", philosopherNumber);
+                Thread.Sleep(thinking_time);
+                Console.WriteLine("Philosopher {0} wants to take Forks.", philosopherNumber);
+
+                Fork first = leftFork;
+                Fork second = rightFork;
+                int firstFork = leftForkNumber;
+                int secondFork = rightForkNumber;
+
+                int even = philosopherNumber % 2;
+
+                // switch forks to prevent deadlock
+                if (even == 0)
+                {
+                    first = rightFork;
+                    firstFork = rightForkNumber;
+                    second = leftFork;
+                    secondFork = leftForkNumber;
+                }
+
+                lock (first)
+                {
+                    Console.WriteLine("Philosopher {0} picked {1} Fork.", philosopherNumber, firstFork);
+
+                    // not needed because of deadlock prevention above
+                    //lock (second)
+                    //{
+
+                    // philosopher eats
+                    Console.WriteLine("Philosopher {0} picked {1} Fork.", philosopherNumber, secondFork);
+                    Console.WriteLine("Philosopher {0} eats.", philosopherNumber);
+
+                    int eating_time = r.Next(0, 10000);
+                    Thread.Sleep(eating_time);
+                    Console.WriteLine("Philosopher {0} stops eating.", philosopherNumber);
+                    //}
+                    Console.WriteLine("Philosopher {0} released {1} Fork.", philosopherNumber, secondFork);
+
+                }
+                Console.WriteLine("Philosopher {0} released {1} Fork.", philosopherNumber, firstFork);
             }
-
-            phil.Join();
         }
-
     }
 
-    public class Philosopher
+    public class Fork
     {
-        private readonly List<Philosopher> _allPhilosophers;
-        private readonly int _i;
-
-        public Philosopher(List<Philosopher> allPhilosophers, int index)
+        public Fork(int index)
         {
-            _allPhilosophers = allPhilosophers;
-            _i = index;
-            this.Name = string.Format("philosopher {0}", _i);
+            this.ID = index;
         }
 
-        public string Name { get; private set; }
-    }
-
-    public class Chopstick
-    {
-        private readonly int _i;
-        private bool _state;
-
-        public Chopstick(int index, bool state)
-        {
-            _i = index;
-            _state = state;
-
-        }
+        public int ID { get; }
     }
 }
