@@ -49,26 +49,26 @@ namespace DiningPhilosophers
 
     public class Philoshoper
     {
-        static public void Eat(Fork leftFork, Fork rightFork, int philosopherNumber, int leftForkNumber, int rightForkNumber)
+        public static void Eat(Fork leftFork, Fork rightFork, int philosopherNumber, int leftForkNumber, int rightForkNumber)
         {
             while (true)
             {
                 // philosopher thinks
                 Random r = new Random();
-                int thinking_time = r.Next(0, 5000);
-                Console.WriteLine("Philosopher {0} thinks.", philosopherNumber);
-                Thread.Sleep(thinking_time);
-                Console.WriteLine("Philosopher {0} wants to take Forks.", philosopherNumber);
+                int thinkingTime = r.Next(0, 5000);
+                Console.WriteLine($"Philosopher {philosopherNumber} thinks.");
+                Thread.Sleep(thinkingTime);
+                Console.WriteLine($"Philosopher {philosopherNumber} wants to take Forks.");
 
                 Fork first = leftFork;
                 Fork second = rightFork;
                 int firstFork = leftForkNumber;
                 int secondFork = rightForkNumber;
 
-                int even = philosopherNumber % 2;
+                bool isEven = philosopherNumber % 2 == 0;
 
                 // switch forks to prevent deadlock
-                if (even == 0)
+                if (isEven)
                 {
                     first = rightFork;
                     firstFork = rightForkNumber;
@@ -102,11 +102,11 @@ namespace DiningPhilosophers
 
     public class Fork
     {
-        public Fork(int index)
+        public Fork(int id)
         {
-            this.ID = index;
+            this.Id = id;
         }
 
-        public int ID { get; }
+        public int Id { get; }
     }
 }
