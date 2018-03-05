@@ -1,6 +1,8 @@
 using System;
 using System.Threading;
 
+using static System.Console;
+
 public class Fork
 {
     private readonly object _locker = new object();
@@ -20,8 +22,10 @@ public class Fork
             throw new ArgumentNullException(nameof(acquisitor));
         }
 
+        WriteLine($"Philosopher {acquisitor.Index} wants to take fork {Index}.");
         Monitor.Enter(_locker);
         _acquiredBy = acquisitor;
+        WriteLine($"Philosopher {acquisitor.Index} took fork {Index}.");
     }
 
     public void ReleaseFork(Philosopher acquiredBy)
@@ -37,6 +41,7 @@ public class Fork
         }
 
         _acquiredBy = null;
+        WriteLine($"Philosopher {acquiredBy.Index} released fork {Index}.");
         Monitor.Exit(_locker);
     }
 }

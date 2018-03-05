@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,7 +11,27 @@ namespace DiningPhilosophers
     {
         private const int PHILOSOPHER_COUNT = 5;
 
-        static void Main(string[] args)
+
+        private static void Main(string[] args)
+        {
+            const int Seats = 5;
+            const int MaxThinkingTime = 1000;
+            const int MaxEatingTime = 2000;
+
+            var cancellationToken = new CancellationTokenSource();
+            var table = new Table(Seats, cancellationToken);
+
+            var philosophers = new ReadOnlyCollection<global::Philosopher>(Enumerable.Range(0, Seats).Select(n => new global::Philosopher(n)).ToArray());
+
+            var tasks = philosophers.Select(p => p.EatAsync(table, MaxThinkingTime, MaxEatingTime)).ToArray();
+
+            Console.ReadLine();
+            cancellationToken.Cancel(false);
+
+            Task.WaitAll(tasks);
+        }
+
+        static void Main2(string[] args)
         {
             // init Forks
             var Forks = new List<Fork>(PHILOSOPHER_COUNT);
@@ -89,7 +111,7 @@ namespace DiningPhilosophers
                     Console.WriteLine("Philosopher {0} eats.", philosopherNumber);
 
                     int eating_time = r.Next(0, 10000);
-                    Thread.Sleep(eating_time);
+                    Thread.Sleep(eating_time); // TODO: do not use Thread.Sleep() inside a task -> pauses ALL tasks on the thread (could be multiple)
                     Console.WriteLine("Philosopher {0} stops eating.", philosopherNumber);
                     //}
                     Console.WriteLine("Philosopher {0} released {1} Fork.", philosopherNumber, secondFork);
